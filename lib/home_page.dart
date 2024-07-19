@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'webview_page.dart';
 import 'text_to_speech.dart';
+import 'speech_to_text.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,12 +13,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextToSpeech tts = TextToSpeech();
   String? selectedVoice;
+
+  final SpeechToTextService _speechService = SpeechToTextService();
+  String _spokenText = '';
+
   bool isDarkMode = true;
 
   @override
   void initState() {
     super.initState();
     loadVoices();
+    _speechService.initialize();
   }
 
   void loadVoices() async {
@@ -28,6 +34,25 @@ class _HomePageState extends State<HomePage> {
         selectedVoice = voices.first['locale']; // Default to first voice
       }
     });
+  }
+
+  void _onSpeechResult(String result) {
+    setState(() {
+      _spokenText = result;
+    });
+
+    if (_spokenText.trim().toLowerCase() == 'open') {
+      _openPortal();
+    }
+  }
+
+  void _openPortal() async {
+    await tts.speak('Opening Portal');
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => WebViewPage(isDarkMode: isDarkMode)),
+    );
   }
 
   void toggleDarkMode(bool value) {
@@ -41,11 +66,10 @@ class _HomePageState extends State<HomePage> {
       selectedVoice = voiceName;
     });
 
-    // Make sure voiceName is not null before setting the voice
     if (voiceName != null) {
       tts.setVoice(voiceName); // Set the selected voice
     } else {
-      // Handle the case where voiceName is null (if needed)
+      tts.setVoice("en-gb-x-gbg-local"); // Set the Default Voice
     }
   }
 
@@ -57,16 +81,13 @@ class _HomePageState extends State<HomePage> {
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBar(
-          backgroundColor: const Color.fromARGB(19, 255, 255, 255),
-          elevation: 0,
-        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
+                const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.only(top: 20, right: 10),
                   child: DropdownButton<String>(
@@ -74,14 +95,13 @@ class _HomePageState extends State<HomePage> {
                     onChanged: onVoiceSelected,
                     items: tts.targetVoices.map((voice) {
                       return DropdownMenuItem<String>(
-                        value: voice['locale'], // Use locale as value
+                        value: voice['locale'],
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(voice['locale']!), // Display locale
-                            Text(voice['gender'] == 'female'
-                                ? 'F'
-                                : 'M'), // Gender indicator
+                            Text(
+                                'Voice ${tts.targetVoices.indexOf(voice) + 1}'), // Display Voice1, Voice2, etc.
+                            Text(voice['gender'] == 'female' ? 'F' : 'M'),
                           ],
                         ),
                       );
@@ -91,7 +111,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    await tts.speak('Hey there, its a new Day !');
+                    await tts.speak('Hey there, its a new Day!');
                   },
                   child: const Text('Test Voice'),
                 ),
@@ -107,8 +127,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     const SizedBox(height: 50),
-                    Image.asset('assets/insightEd.png',
-                        height: 100), // Add your logo here
+                    Image.asset('assets/insightEd.png', height: 100),
                     const SizedBox(height: 20),
                     const Text(
                       'InsightEd is an innovative mobile application designed to revolutionize the learning experience for visually impaired students in higher education. By seamlessly integrating with Moodle-based Learning Management Systems (LMS).',
@@ -118,11 +137,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 120),
+                    const SizedBox(height: 60),
                     ElevatedButton(
                       onPressed: () async {
-                        await tts.speak(
-                            'Opening Portal'); // Speak message before navigating
+                        await tts.speak('Opening Portal');
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -135,6 +153,27 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(height: 20),
                   ],
                 ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Spoken Text: $_spokenText',
+                        overflow: TextOverflow
+                            .ellipsis, // Optional: To handle overflow
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  onPressed: _speechService.isListening
+                      ? _speechService.stopListening
+                      : () => _speechService.startListening(_onSpeechResult),
+                  child: Text(_speechService.isListening
+                      ? 'Stop Listening'
+                      : 'Start Listening'),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

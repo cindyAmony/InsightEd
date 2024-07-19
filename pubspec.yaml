@@ -1,7 +1,7 @@
 name: insight_ed
 description: "Insight Ed is an innovative mobile application designed to revolutionize the learning experience for visually impaired students in higher education."
 publish_to: 'none'
-version: 0.1.0
+version: 0.3.0
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -10,7 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   webview_flutter: ^3.0.0
-  flutter_tts: ^3.2.0
+  flutter_tts: ^4.0.2
+  speech_to_text: ^6.6.2
 
 dev_dependencies:
   flutter_test:
